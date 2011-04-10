@@ -10,4 +10,7 @@ group :development do
   gem "bundler", "~> 1.0.0"
   gem "jeweler", "~> 1.5.2"
   gem "rcov", ">= 0"
+  gem "mongo"
+  gem "net-dns", :git => "https://ryanbreed@github.com/ryanbreed/net-dns.git"
+  gem "pcap"
 end
