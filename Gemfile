@@ -11,6 +11,8 @@ group :development do
   gem "jeweler", "~> 1.5.2"
   gem "rcov", ">= 0"
   gem "mongo"
-  gem "net-dns", :git => "https://ryanbreed@github.com/ryanbreed/net-dns.git"
+  gem "dnsruby"
+  gem "SystemTimer"
+  gem "bson_ext"
   gem "pcap"
 end

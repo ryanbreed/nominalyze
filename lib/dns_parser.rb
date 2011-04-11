@@ -17,12 +17,15 @@ class DnsParser
     else
       raise ArgumentError
     end
+    pcap.add_filter(filter)
     yield self if block_given?
   end
   def parse
     pcap.each_packet do |pkt|
-      message=DnsRuby.decode(pkt.udp_data)
-      puts message.to_s
+      begin
+        message=Dnsruby::Message.decode(pkt.udp_data)
+      rescue
+      end
     end
   end
 end
