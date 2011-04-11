@@ -1,6 +1,5 @@
 require 'dnsruby'
 require 'ffi/pcap'
-require 'ffi/packets'
 require 'mongo'
 require 'bit-struct'
 require 'pp'
@@ -27,6 +26,13 @@ class UdpFrame <BitStruct
   rest        :udp_data,            "UDP Data"
   initial_value.ip_v    = 4
   initial_value.ip_hl   = 5
+  alias_method :original_to_h, :to_h
+
+  def to_h
+    h=original_to_h
+    h[:udp_data]=BSON::Binary.new(h[:udp_data])
+    h
+  end
 end
 
 class DnsParser
@@ -43,9 +49,10 @@ class DnsParser
     yield self if block_given?
   end
   def parse
+    count=0
     pcap.loop do |this,pkt|
       udp=UdpFrame.new(pkt.body)
-      db['packets'].insert(udp.to_h)
+      pkt_id=db['packets'].insert(udp.to_h.merge(:timestamp=>pkt.timestamp.utc))
       begin
         message=Dnsruby::Message.decode(udp.udp_data)
       rescue
