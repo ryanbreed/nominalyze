@@ -1,8 +1,11 @@
-require 'dnsruby'
+require 'java'
+require 'rubygems'
 require 'ffi/pcap'
 require 'mongo'
 require 'bit-struct'
 require 'pp'
+require 'dnsjava-2.1.1.jar'
+import 'org.xbill.DNS.Message'
 
 class UdpFrame <BitStruct
   hex_octets :enet_dst,  48,     "Source MAC"
@@ -34,24 +37,6 @@ class UdpFrame <BitStruct
     h
   end
 end
-class Dnsruby::Question
-  def to_h
-    h={}
-    self.instance_variables.collect {|i| i.to_s.gsub(/^@/,"")}.each do |var|
-      h[var]=self.send(var).to_s.dup.force_encoding("UTF-8")
-    end
-    h
-  end
-end
-class Dnsruby::RR
-  def to_h
-    h={}
-    self.instance_variables.collect {|i| i.to_s.gsub(/^@/,"")}.each do |var|
-      h[var]=self.send(var).to_s.dup.force_encoding("UTF-8")
-    end
-    h
-  end
-end
 
 class DnsParser
   attr_accessor :pcap_filename, :mongo_server, :mongo_port
@@ -70,22 +55,9 @@ class DnsParser
     count=0
     pcap.loop do |this,pkt|
       udp=UdpFrame.new(pkt.body)
-      pkt_id=db['packets'].insert(udp.to_h.merge(:timestamp=>pkt.timestamp.utc))
-      begin
-        message=Dnsruby::Message.decode(udp.udp_data)
-      rescue
-        next
-      end
-      message.question.each do |question|
-        db['questions'].insert(question.to_h.merge(:packet_id=>pkt_id))
-      end
-      message.answer.each do |answer|
-        begin
-          db['answers'].insert(answer.to_h.merge(:packet_id=>pkt_id))
-        rescue
-        end
-        
-      end
+      #pkt_id=db['packets'].insert(udp.to_h.merge(:timestamp=>pkt.timestamp.utc))
+
+      message=Message.new(udp.udp_data.to_java_bytes)
     end
   end
 end

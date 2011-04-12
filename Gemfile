@@ -14,6 +14,6 @@ group :development do
   gem "dnsruby"
   #gem "SystemTimer"
   gem "bson_ext"
-  gem "ffi-pcap", :git => "https://github.com/sophsec/ffi-pcap"
+  gem "ffi-pcap"#, :git => "https://github.com/sophsec/ffi-pcap"
   gem "ffi-packets"
 end
