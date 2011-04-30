@@ -1,5 +1,5 @@
 require 'dnsruby'
-#require 'ffi/pcap'
+require 'ffi/pcap'
 require 'mongo'
 require 'bit-struct'
 require 'pp'
@@ -58,8 +58,8 @@ class Dnsruby::Message
     h["questions"]=[]
     h["answers"]=[]
     h["header"]=header.to_h
-    each_question {|q| h["questions"]<<q.to_h}
-    each_answer   {|a| h["answers"]<<a.to_h}
+    each_question {|q| h["questions"].push(q.to_h)}
+    each_answer   {|a| h["answers"].push(a.to_h)}
     h
   end
 end

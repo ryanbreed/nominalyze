@@ -15,6 +15,6 @@ group :development do
   gem "bit-struct"
   #gem "SystemTimer"
   gem "bson_ext"
-  #gem "ffi-pcap"#, :git => "https://github.com/sophsec/ffi-pcap"
-  #gem "ffi-packets"
+  gem "ffi-pcap"#, :git => "https://github.com/sophsec/ffi-pcap"
+  gem "ffi-packets"
 end
