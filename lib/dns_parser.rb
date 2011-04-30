@@ -1,5 +1,5 @@
 require 'dnsruby'
-require 'ffi/pcap'
+#require 'ffi/pcap'
 require 'mongo'
 require 'bit-struct'
 require 'pp'
