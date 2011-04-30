@@ -12,8 +12,9 @@ group :development do
   gem "rcov", ">= 0"
   gem "mongo"
   gem "dnsruby"
+  gem "bit-struct"
   #gem "SystemTimer"
   gem "bson_ext"
-  gem "ffi-pcap"#, :git => "https://github.com/sophsec/ffi-pcap"
-  gem "ffi-packets"
+  #gem "ffi-pcap"#, :git => "https://github.com/sophsec/ffi-pcap"
+  #gem "ffi-packets"
 end
