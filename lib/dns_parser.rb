@@ -4,7 +4,18 @@ require 'mongo'
 require 'bit-struct'
 require 'pp'
 
+module Hashinator
+  def to_h
+    h={}
+    self.instance_variables.collect {|i| i.to_s.gsub(/^@/,"")}.each do |var|
+      h[var]=self.send(var).to_s.dup.force_encoding("UTF-8")
+    end
+    h
+  end
+end
+
 class UdpFrame <BitStruct
+  attr_accessor :timestamp
   hex_octets :enet_dst,  48,     "Source MAC"
   hex_octets :enet_src,  48,     "Destination MAC"
   unsigned   :enet_type,16,     "Ethertype or length"
@@ -34,9 +45,31 @@ class UdpFrame <BitStruct
     h
   end
 end
+class Dnsruby::Message
+  include Hashinator
+  alias signing tsig
+  alias old_to_hash to_h
+  def tsigkey
+    ""
+  end
+  def to_h
+    h=old_to_hash
+    %w{ question answer header additional authority }.each {|s| h.delete(s)}
+    h["questions"]=[]
+    h["answers"]=[]
+    h["header"]=header.to_h
+    each_question {|q| h["questions"]<<q.to_h}
+    each_answer   {|a| h["answers"]<<a.to_h}
+    h
+  end
+end
+class Dnsruby::Header
+  include Hashinator
+  alias rcode get_header_rcode
+end
 class Dnsruby::Question
   def to_h
-    h={}
+   h={}
     self.instance_variables.collect {|i| i.to_s.gsub(/^@/,"")}.each do |var|
       h[var]=self.send(var).to_s.dup.force_encoding("UTF-8")
     end
@@ -45,10 +78,11 @@ class Dnsruby::Question
 end
 class Dnsruby::RR
   def to_h
-    h={}
+   h={}
     self.instance_variables.collect {|i| i.to_s.gsub(/^@/,"")}.each do |var|
       h[var]=self.send(var).to_s.dup.force_encoding("UTF-8")
     end
+    h.delete("signature")
     h
   end
 end
@@ -70,22 +104,17 @@ class DnsParser
     count=0
     pcap.loop do |this,pkt|
       udp=UdpFrame.new(pkt.body)
-      pkt_id=db['packets'].insert(udp.to_h.merge(:timestamp=>pkt.timestamp.utc))
+      # TODO this needs to go into UdpFrame#new
+      udp.timestamp=pkt.timestamp.utc
+      message=nil
       begin
         message=Dnsruby::Message.decode(udp.udp_data)
       rescue
-        next
       end
-      message.question.each do |question|
-        db['questions'].insert(question.to_h.merge(:packet_id=>pkt_id))
-      end
-      message.answer.each do |answer|
-        begin
-          db['answers'].insert(answer.to_h.merge(:packet_id=>pkt_id))
-        rescue
-        end
-        
-      end
+      uh=udp.to_h
+      message.nil? ? mh={} : mh=message.to_h
+      doc=uh.merge(mh)
+      db["dns"].insert(doc)
     end
   end
 end

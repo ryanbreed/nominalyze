@@ -5,7 +5,12 @@ require 'mongo'
 require 'bit-struct'
 require 'pp'
 require 'dnsjava-2.1.1.jar'
+require 'gson-1.7.jar'
 import 'org.xbill.DNS.Message'
+import 'com.google.gson.FieldNamingPolicy'
+import 'com.google.gson.GsonBuilder'
+import 'com.google.gson.Gson'
+
 
 class UdpFrame <BitStruct
   hex_octets :enet_dst,  48,     "Source MAC"
