@@ -79,7 +79,7 @@ end
 class Dnsruby::RR
   def to_h
    h={}
-    self.instance_variables.collect {|i| i.to_s.gsub(/^@/,"")}.each do |var|
+    self.instance_variables.collect {|i| i.to_s.gsub(/^@/,"")}.reject {|m| m=="options"}.each do |var|
       h[var]=self.send(var).to_s.dup.force_encoding("UTF-8")
     end
     h.delete("signature")
