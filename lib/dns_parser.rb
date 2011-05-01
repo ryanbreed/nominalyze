@@ -42,6 +42,7 @@ class UdpFrame <BitStruct
   def to_h
     h=original_to_h
     h[:udp_data]=BSON::Binary.new(h[:udp_data])
+    h["timestamp"]=self.timestamp
     h
   end
 end
@@ -53,13 +54,15 @@ class Dnsruby::Message
     ""
   end
   def to_h
-    h=old_to_hash
+    h={}#old_to_hash
     %w{ question answer header additional authority }.each {|s| h.delete(s)}
     h["questions"]=[]
     h["answers"]=[]
-    h["header"]=header.to_h
-    each_question {|q| h["questions"].push(q.to_h)}
-    each_answer   {|a| h["answers"].push(a.to_h)}
+    h["txid"]=header.id
+    each_question {|q| h["questions"]<<q.to_h}
+    each_answer   {|a| h["answers"]<<a.to_h}
+    h["qcount"]=h["questions"].length
+    h["acount"]=h["answers"].length
     h
   end
 end
@@ -73,16 +76,20 @@ class Dnsruby::Question
     self.instance_variables.collect {|i| i.to_s.gsub(/^@/,"")}.each do |var|
       h[var]=self.send(var).to_s.dup.force_encoding("UTF-8")
     end
+    h["namelen"]=self.qname.to_s.size
     h
   end
 end
 class Dnsruby::RR
   def to_h
    h={}
-    self.instance_variables.collect {|i| i.to_s.gsub(/^@/,"")}.reject {|m| m=="options"}.each do |var|
+   varnames=self.instance_variables.collect {|i| i.to_s.gsub(/^@/,"")}
+   varnames.delete('options')
+   varnames.each do |var|
       h[var]=self.send(var).to_s.dup.force_encoding("UTF-8")
     end
     h.delete("signature")
+    h["rdatalen"]=self.rdata.to_s.size
     h
   end
 end
