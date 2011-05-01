@@ -40,7 +40,7 @@ class UdpFrame <BitStruct
   alias_method :original_to_h, :to_h
   alias_method :original_initialize, :initialize
   def initialize(pkt)
-    p=original_new(pkt.body)
+    p=original_initialize(pkt.body)
     p.timestamp=pkt.timestamp.utc.to_i
     p
   end
