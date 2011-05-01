@@ -38,10 +38,11 @@ class UdpFrame <BitStruct
   initial_value.ip_v    = 4
   initial_value.ip_hl   = 5
   alias_method :original_to_h, :to_h
-  alias_method :original_new, :new
-  def new(pkt)
+  alias_method :original_initialize, :initialize
+  def initialize(pkt)
     p=original_new(pkt.body)
     p.timestamp=pkt.timestamp.utc.to_i
+    p
   end
   def to_h
     h=original_to_h
