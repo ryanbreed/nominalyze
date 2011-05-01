@@ -38,12 +38,7 @@ class UdpFrame <BitStruct
   initial_value.ip_v    = 4
   initial_value.ip_hl   = 5
   alias_method :original_to_h, :to_h
-  alias_method :original_initialize, :initialize
-  def initialize(pkt)
-    p=original_initialize(pkt.body)
-    p.timestamp=pkt.timestamp.utc.to_i
-    p
-  end
+
   def to_h
     h=original_to_h
     h[:udp_data]=BSON::Binary.new(h[:udp_data])
@@ -115,7 +110,9 @@ class DnsParser
   def parse
     count=0
     pcap.loop do |this,pkt|
-      udp=UdpFrame.new(pkt)
+      udp=UdpFrame.new(pkt.body) do |u|
+        u.timestamp=pkt.timestamp.utc.to_i
+      end
       # TODO this needs to go into UdpFrame#new
       message=nil
       begin
