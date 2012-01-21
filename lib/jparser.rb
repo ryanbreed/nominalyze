@@ -1,15 +1,23 @@
 require 'java'
-require 'rubygems'
-require 'ffi/pcap'
 require 'mongo'
 require 'bit-struct'
+require 'ffi-pcap'
 require 'pp'
-require 'dnsjava-2.1.1.jar'
-require 'gson-1.7.jar'
-import 'org.xbill.DNS.Message'
-import 'com.google.gson.FieldNamingPolicy'
-import 'com.google.gson.GsonBuilder'
-import 'com.google.gson.Gson'
+require 'dnsjava-2.1.3.jar'
+
+module JavaImports
+  include_package 'org.xbill.DNS'
+end
+#include JavaImports
+
+class Object
+  class << self
+    alias :const_missing_old :const_missing
+    def const_missing c
+      JavaImports.const_get c
+    end
+  end
+end
 
 
 class UdpFrame <BitStruct
@@ -43,9 +51,45 @@ class UdpFrame <BitStruct
   end
 end
 
+
+class DnsMessage
+  attr_reader :message, :frame
+  def initialize(frame)
+    @frame=frame
+    @message=Message.new(frame.udp_data.to_java_bytes)
+  end
+  def to_h
+    h={
+      :questions=>[],
+      :txid=>message.get_header.get_id
+    }
+    %w{ip_src ip_dst udp_sport udp_dport ip_ttl udp_data}.each {|attr| h[attr.to_sym]=frame.send(attr)}
+    message.get_section_array(Section::QUESTION).each do |q|
+      h[:questions].push({:name=>q.get_name.to_string, :type=>Type.string(q.get_type)})
+    end
+    if message.get_header.get_flag(Flags::QR)
+      h[:answers]=[]
+      message.get_section_array(Section::ANSWER).each do |a|
+        h[:answers].push({:name=>a.get_name.to_string,:type=>Type.string(a.get_type),:rdata=>a.rdata_to_string})
+      end
+    end
+    h
+  end
+  # TODO: messy messy messy  - if i don't respond to this message, try UdpFrame and then Java::OrgXBillDNS::Message
+  def method_missing(meth,*args)
+    if frame.respond_to? meth
+      frame.send(meth,*args)
+    elsif message.respond_to?(meth)
+      message.send(meth,*args)
+    else
+      raise NoMethodError, "No method #{meth.to_s}"
+    end
+  end
+end
+
 class DnsParser
   attr_accessor :pcap_filename, :mongo_server, :mongo_port
-  attr_reader   :pcap, :connection, :db
+  attr_reader   :pcap, :connection, :db, :packets
   def initialize(*args)
     Hash[*args].each {|k,v| self.send("%s="%k,v)}
     @mongo_server ||= "localhost"
@@ -54,15 +98,21 @@ class DnsParser
     @db=connection['nominalyze']
     @pcap=FFI::PCap::Offline.new(pcap_filename)
     pcap.setfilter("udp port 53")
+    @packets=[]
+    @frames=[]
+    @messages=[]
     yield self if block_given?
   end
-  def parse
-    count=0
-    pcap.loop do |this,pkt|
-      udp=UdpFrame.new(pkt.body)
-      #pkt_id=db['packets'].insert(udp.to_h.merge(:timestamp=>pkt.timestamp.utc))
 
-      message=Message.new(udp.udp_data.to_java_bytes)
+  def parse
+    t=Time.new.to_i
+    hashes=0
+    pcap.loop do |this,pkt|
+      message=DnsMessage.new(UdpFrame.new(pkt.body))
+      #db["dns"].insert(message)
+      hashes+=1
     end
+    puts "parsed #{hashes} messages in #{Time.new.to_i - t} seconds"
+    nil
   end
 end
