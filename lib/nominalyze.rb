@@ -1,5 +1,6 @@
 
 require 'java'
+require 'rubygems'
 require 'mongo'
 require 'bit-struct'
 require 'ffi-pcap'

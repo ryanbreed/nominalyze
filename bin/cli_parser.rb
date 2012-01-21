@@ -8,9 +8,11 @@ unless File.respond_to? :realpath
   end
 end
 $: << File.expand_path(File.dirname(File.realpath(__FILE__)) + '/../lib')
+
 require 'nominalyze'
-$ARGV.each do |filename|
+
+ARGV.each do |filename|
   puts "processing #{filename}"
-  DnsParser.new(:pcap_filename=>"filename").parse
+  DnsParser.new(:pcap_filename=>filename).parse
 end
 

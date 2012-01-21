@@ -36,19 +36,20 @@ class DnsParser
 
   def parse
     t=Time.new.to_i
-    hashes=0
+    hash_num=0
     pcap.loop do |this,pkt|
-      message=DnsMessage.new(UdpFrame.new(pkt.body)).to_h
+      frame=UdpFrame.new(pkt.body)
+      message_hash=DnsMessage.new(:frame=>frame).to_h
       begin
-        db["dns"].insert(message)
+        db["dns"].insert(message_hash)
       rescue
-        puts "BOMBED on message #{hashes}"
-        pp message
+        puts "BOMBED on message #{hash_num}"
+        pp message_hash
       end
 
-      hashes+=1
+      hash_num+=1
     end
-    puts "parsed #{hashes} messages in #{Time.new.to_i - t} seconds"
+    puts "parsed #{hash_num} messages in #{Time.new.to_i - t} seconds"
     nil
   end
 end
