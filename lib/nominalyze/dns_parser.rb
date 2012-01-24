@@ -1,7 +1,7 @@
 # CREATED BY: RYAN BREED <opensource@breed.org>
 # CREATED:    1/21/12
 
-# import the entire dnzjava namespace into the JavaImports module
+# import the entire dnsjava namespace into the JavaImports module
 module JavaImports
   include_package 'org.xbill.DNS'
 end
@@ -39,6 +39,7 @@ class DnsParser
     hash_num=0
     pcap.loop do |this,pkt|
       frame=UdpFrame.new(pkt.body)
+      frame.time=pkt.time
       message_hash=DnsMessage.new(:frame=>frame).to_h
       begin
         db["dns"].insert(message_hash)

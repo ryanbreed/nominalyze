@@ -24,9 +24,11 @@ class UdpFrame <BitStruct
   initial_value.ip_hl   = 5
   alias_method :original_to_h, :to_h
 
-  def to_h
-    h=original_to_h
-    h[:udp_data]=BSON::Binary.new(h[:udp_data])
-    h
-  end
+  attr_accessor :time
+
+  #def to_h
+  #  h=original_to_h
+  #  h[:udp_data]=BSON::Binary.new(h[:udp_data])
+  #  h
+  #end
 end
