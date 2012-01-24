@@ -24,7 +24,7 @@ class DnsParser
     Hash[*args].each {|k,v| self.send("%s="%k,v)}
     @mongo_server ||= "localhost"
     @mongo_port   ||= 27017
-    @connection = Mongo::Connection.new(mongo_server,mongo_port)
+    @connection = Mongo::Connection.new(mongo_server,mongo_port, :pool_size=>4)
     @db=connection['nominalyze']
     @pcap=FFI::PCap::Offline.new(pcap_filename)
     pcap.setfilter("udp port 53")
@@ -36,21 +36,30 @@ class DnsParser
 
   def parse
     t=Time.new.to_i
-    hash_num=0
-    pcap.loop do |this,pkt|
-      frame=UdpFrame.new(pkt.body)
-      frame.time=pkt.time
-      message_hash=DnsMessage.new(:frame=>frame).to_h
-      begin
-        db["dns"].insert(message_hash)
-      rescue
-        puts "BOMBED on message #{hash_num}"
-        pp message_hash
-      end
+    q=Queue.new
 
-      hash_num+=1
+    hash_num=0
+    message_generator = Thread.new do
+      pcap.loop do |this,pkt|
+        frame=UdpFrame.new(pkt.body)
+        frame.time=pkt.time
+        message_hash=DnsMessage.new(:frame=>frame).to_h
+        #pp message_hash
+        q << message_hash
+      end
+      q << "done"
     end
-    puts "parsed #{hash_num} messages in #{Time.new.to_i - t} seconds"
+
+    persister = Thread.new do
+      while (item=q.pop)!= "done"
+        hash_num+=1
+        db["dns"].insert(item)
+        #pp item
+      end
+    end
+    persister.join
+    t_total=Time.new.to_i - t
+    puts "parsed #{hash_num} messages in #{t_total} seconds #{t_total==0 ? '' : (hash_num.to_f/t_total.to_f)}"
     nil
   end
 end

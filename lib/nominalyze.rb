@@ -19,6 +19,7 @@ require 'dns_message'
 require 'udp_frame'
 require 'dns_parser'
 require 'json'
+require 'thread'
 
 module Nominalyze
   VERSION="0.5.0"
