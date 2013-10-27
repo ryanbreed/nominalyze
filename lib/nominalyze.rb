@@ -20,7 +20,8 @@ require 'udp_frame'
 require 'dns_parser'
 require 'json'
 require 'thread'
+require 'tire'
 
 module Nominalyze
-  VERSION="0.5.0"
+  VERSION="0.6.0"
 end

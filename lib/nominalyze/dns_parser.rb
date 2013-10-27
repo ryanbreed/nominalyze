@@ -25,7 +25,7 @@ class DnsParser
     @mongo_server ||= "localhost"
     @mongo_port   ||= 27017
     @connection = Mongo::Connection.new(mongo_server,mongo_port, :pool_size=>4)
-    @db=connection['nominalyze']
+    @db=connection['nom']
     @pcap=FFI::PCap::Offline.new(pcap_filename)
     pcap.setfilter("udp port 53")
     @packets=[]
